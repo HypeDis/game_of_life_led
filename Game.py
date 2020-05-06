@@ -4,12 +4,18 @@
 
 from random import randint
 from time import sleep
+from UnicornController import UnicornHDController
+import time
 
 BLACK_RGB = (0, 0, 0)
 
 
 class GameOfLife():
-    def __init__(self, width, height):
+    @staticmethod
+    def UnicornHDGOL():
+        return GameOfLife(16, 16, UnicornHDController())
+
+    def __init__(self, width, height, LEDcontroller):
         self.currentColor = (0, 0, 0)
         self.randomizeColor = True
         self.isPlaying = True
@@ -18,11 +24,32 @@ class GameOfLife():
         self.board = self.initializeBoard()
         self.duration = 60
         self.framesPerSecond = 5
+        self.LED = LEDcontroller
+
+    def setDuration(self, seconds):
+        self.duration = seconds
+
+    def setFrameRate(self, FPS):
+        self.framesPerSecond = FPS
 
     def initializeBoard(self):
         newBoard = [[Cell(x, y) for x in range(self.width)]
                     for y in range(self.height)]
         return newBoard
+
+    def play(self):
+        self.forEachCell(self.setPixel)
+        self.LED.show()
+        sleep(0.5)
+        startTime = int(time.time())
+        sleepTime = 1 / self.framesPerSecond
+        while int(time.time()) - startTime < self.duration:
+            self.updateBoard()
+            self.forEachCell(self.setPixel)
+            self.LED.show()
+            sleep(sleepTime)
+        print('Game Over!')
+        self.LED.off()
 
     def forEachCell(self, callback):
         for y in range(len(self.board)):
@@ -41,15 +68,10 @@ class GameOfLife():
 
         self.forEachCell(randomizeCell)
 
-    def play(self):
-        sleepTime = 1 / self.framesPerSecond
-        totalFrames = self.duation * self.framesPerSecond
-        currentFrame = 0
-        while currentFrame < totalFrames:
-            updateBoard()
-            currentFrame += 1
-            sleep(sleepTime)
-
+    def setPixel(self, cell):
+        coords = cell.getLocation()
+        rgb = cell.getColor()
+        self.LED.setPixel(*coords, *rgb)
 
     def generateRandomColor(self):
         r = randint(0, 255)
